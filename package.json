@@ -64,6 +64,7 @@
    "packageManager": "yarn@3.2.0",
    "devDependencies": {
       "eslint": "^8.9.0",
+      "hardhat": "^2.9.2",
       "husky": "^7.0.4",
       "lint-staged": "^12.3.4",
       "prettier": "^2.5.1",
@@ -95,5 +96,8 @@
          "yarn workspace @scaffold-eth/hardhat format",
          "yarn workspace @scaffold-eth/hardhat solhint --fix"
       ]
+   },
+   "dependencies": {
+      "@openzeppelin/contracts": "^4.5.0"
    }
 }
