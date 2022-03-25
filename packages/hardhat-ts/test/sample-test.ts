@@ -12,4 +12,17 @@ describe('YourContract', function () {
     await yourContract.setPurpose('Hola, mundo!');
     expect(await yourContract.purpose()).to.equal('Hola, mundo!');
   });
+
+  it('mints proper amount of token to deployer on deploy', async function () {
+    const initialSupply = 100;
+    const YourContract = await ethers.getContractFactory('USDCToken');
+    const yourContract = await YourContract.deploy(initialSupply);
+
+    const accounts = await ethers.getSigners();
+    const deployer = accounts[0];
+
+    const deployerBalance = await yourContract.balanceOf(deployer.address);
+
+    expect(deployerBalance).to.equal(initialSupply);
+  });
 });
