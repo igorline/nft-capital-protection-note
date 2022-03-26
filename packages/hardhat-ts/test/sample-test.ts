@@ -1,18 +1,10 @@
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 
+const realUSDCAddress = '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E';
+const realUSTAddress = '0x260Bbf5698121EB85e7a74f2E45E16Ce762EbE11';
+
 describe('YourContract', function () {
-  it("Should return the new purpose once it's changed", async function () {
-    const YourContract = await ethers.getContractFactory('YourContract');
-    const yourContract = await YourContract.deploy();
-
-    await yourContract.deployed();
-    expect(await yourContract.purpose()).to.equal('Building Unstoppable Apps!!!');
-
-    await yourContract.setPurpose('Hola, mundo!');
-    expect(await yourContract.purpose()).to.equal('Hola, mundo!');
-  });
-
   it('mints proper amount of token to deployer on deploy', async function () {
     const initialSupply = 100;
     const USDC = await ethers.getContractFactory('USDC');
@@ -35,9 +27,10 @@ describe('YourContract', function () {
 
     const USDC = await ethers.getContractFactory('USDC');
     const usdcInstance = await USDC.deploy(initialSupply);
+    const usdtInstance = await USDC.deploy(initialSupply);
 
     const StakingContract = await ethers.getContractFactory('contractv1');
-    const stakingContract = await StakingContract.deploy(usdcInstance.address);
+    const stakingContract = await StakingContract.deploy(usdcInstance.address, usdtInstance.address);
 
     const allowance = await usdcInstance.allowance(deployer.address, stakingContract.address);
 
@@ -81,7 +74,7 @@ describe('YourContract', function () {
     const realUSDC = RealUSDC.attach('0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E');
 
     const StakingContractFork = await ethers.getContractFactory('contractv1');
-    const stakingContractFork = await StakingContractFork.deploy(realUSDC.address);
+    const stakingContractFork = await StakingContractFork.deploy(realUSDCAddress, realUSTAddress);
     const impStakingContract = stakingContractFork.connect(signer);
 
     const userBalanceForkBeforeTx = await realUSDC.balanceOf(signer.address);
@@ -107,9 +100,10 @@ describe('YourContract', function () {
 
     const USDC = await ethers.getContractFactory('USDC');
     const usdcInstance = await USDC.deploy(initialSupply);
+    const ustInstance = await USDC.deploy(initialSupply);
 
     const StakingContract = await ethers.getContractFactory('contractv1');
-    const stakingContract = await StakingContract.deploy(usdcInstance.address);
+    const stakingContract = await StakingContract.deploy(usdcInstance.address, ustInstance.address);
 
     const allowance = await usdcInstance.allowance(deployer.address, stakingContract.address);
 
@@ -154,9 +148,10 @@ describe('YourContract', function () {
 
     const USDC = await ethers.getContractFactory('USDC');
     const usdcInstance = await USDC.deploy(initialSupply);
+    const usdtInstance = await USDC.deploy(initialSupply);
 
     const StakingContract = await ethers.getContractFactory('contractv1');
-    const stakingContract = await StakingContract.deploy(usdcInstance.address);
+    const stakingContract = await StakingContract.deploy(usdcInstance.address, usdtInstance.address);
 
     const allowance = await usdcInstance.allowance(deployer.address, stakingContract.address);
 
@@ -180,9 +175,10 @@ describe('YourContract', function () {
 
     const USDC = await ethers.getContractFactory('USDC');
     const usdcInstance = await USDC.deploy(initialSupply);
+    const usdtInstance = await USDC.deploy(initialSupply);
 
     const StakingContract = await ethers.getContractFactory('contractv1');
-    const stakingContract = await StakingContract.deploy(usdcInstance.address);
+    const stakingContract = await StakingContract.deploy(usdcInstance.address, usdtInstance.address);
 
     const allowance = await usdcInstance.allowance(deployer.address, stakingContract.address);
 
@@ -193,5 +189,29 @@ describe('YourContract', function () {
     await tx2.wait();
 
     await expect(stakingContract.withdraw(deployer1.address, withdrawAmount)).to.be.reverted;
+  });
+
+  it('settles and starts farm', async function () {
+    await network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: ['0xbf14db80d9275fb721383a77c00ae180fc40ae98'],
+    });
+
+    const signer = await ethers.getSigner('0xbf14db80d9275fb721383a77c00ae180fc40ae98');
+
+    const RealUSDC = await ethers.getContractFactory('ERC20');
+    const realUSDC = RealUSDC.attach(realUSDCAddress);
+
+    const StakingContractFork = await ethers.getContractFactory('contractv1');
+    const stakingContractFork = await StakingContractFork.deploy(realUSDCAddress, realUSTAddress);
+    const impStakingContract = stakingContractFork.connect(signer);
+
+    const amount = ethers.utils.parseUnits('65', 6);
+    await (await realUSDC.connect(signer).approve(stakingContractFork.address, amount)).wait();
+    const tx3 = await impStakingContract.connect(signer).stake(amount);
+    tx3.wait();
+
+    const settleTx = await stakingContractFork.settle(amount.div(2), '0');
+    await settleTx.wait();
   });
 });
