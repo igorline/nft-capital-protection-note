@@ -100,7 +100,7 @@ describe('YourContract', function () {
   it('check withdraw with one user', async function () {
     const initialSupply = 100 * Math.pow(10, 6);
     const amount = 65 * Math.pow(10, 6);
-    const withdrawAmount = 20 * Math.pow(10, 6);
+    const withdrawAmount: number = 20 * Math.pow(10, 6);
 
     const accounts = await ethers.getSigners();
     const deployer = accounts[0];
@@ -127,7 +127,7 @@ describe('YourContract', function () {
     await tx2.wait();
 
     const contractBalance = await usdcInstance.balanceOf(stakingContract.address);
-    const userBalance = await usdcInstance.balanceOf(deployer.address);
+    const userBalance: string = await usdcInstance.balanceOf(deployer.address);
 
     expect(userBalance).to.equal(initialSupply - amount);
     expect(contractBalance).to.equal(amount);
@@ -142,5 +142,30 @@ describe('YourContract', function () {
     expect(newUserBalance).to.equal(parseInt(userBalance) + withdrawAmount);
 
     expect(await stakingContract.totalStake()).to.equal(amount - withdrawAmount);
+  });
+
+  it('Try withdraw more than staked', async function () {
+    const initialSupply = 100 * Math.pow(10, 6);
+    const amount = 65 * Math.pow(10, 6);
+    const withdrawAmount = 70 * Math.pow(10, 6);
+
+    const accounts = await ethers.getSigners();
+    const deployer = accounts[0];
+
+    const USDC = await ethers.getContractFactory('USDC');
+    const usdcInstance = await USDC.deploy(initialSupply);
+
+    const StakingContract = await ethers.getContractFactory('contractv1');
+    const stakingContract = await StakingContract.deploy(usdcInstance.address);
+
+    const allowance = await usdcInstance.allowance(deployer.address, stakingContract.address);
+
+    const tx = await usdcInstance.approve(stakingContract.address, amount);
+    await tx.wait();
+
+    const tx2 = await stakingContract.stake(amount);
+    await tx2.wait();
+
+    await expect(stakingContract.withdraw(deployer.address, withdrawAmount)).to.be.reverted;
   });
 });
