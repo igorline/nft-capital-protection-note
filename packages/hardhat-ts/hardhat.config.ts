@@ -121,6 +121,22 @@ const config: HardhatUserConfig = {
         mnemonic: getMnemonic(),
       },
     },
+    fujiAvalanche: {
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43113,
+      accounts: {
+        mnemonic: getMnemonic(),
+      },
+    },
+    mainnetAvalanche: {
+      url: 'https://api.avax.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43114,
+      accounts: {
+        mnemonic: getMnemonic(),
+      },
+    },
   },
   solidity: {
     compilers: [
