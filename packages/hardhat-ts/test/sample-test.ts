@@ -96,4 +96,51 @@ describe('YourContract', function () {
     expect(contractBalanceFork).to.equal(amount);
     expect(userBalanceFork).to.equal(userBalanceForkBeforeTx - amount);
   });
+
+  it('check withdraw with one user', async function () {
+    const initialSupply = 100 * Math.pow(10, 6);
+    const amount = 65 * Math.pow(10, 6);
+    const withdrawAmount = 20 * Math.pow(10, 6);
+
+    const accounts = await ethers.getSigners();
+    const deployer = accounts[0];
+
+    const USDC = await ethers.getContractFactory('USDC');
+    const usdcInstance = await USDC.deploy(initialSupply);
+
+    const StakingContract = await ethers.getContractFactory('contractv1');
+    const stakingContract = await StakingContract.deploy(usdcInstance.address);
+
+    const allowance = await usdcInstance.allowance(deployer.address, stakingContract.address);
+
+    expect(allowance).to.equal(0);
+    expect(await stakingContract.totalStake()).to.equal(0);
+
+    const tx = await usdcInstance.approve(stakingContract.address, amount);
+    await tx.wait();
+
+    const allowanceAfterApproval = await usdcInstance.allowance(deployer.address, stakingContract.address);
+
+    expect(allowanceAfterApproval).to.equal(amount);
+
+    const tx2 = await stakingContract.stake(amount);
+    await tx2.wait();
+
+    const contractBalance = await usdcInstance.balanceOf(stakingContract.address);
+    const userBalance = await usdcInstance.balanceOf(deployer.address);
+
+    expect(userBalance).to.equal(initialSupply - amount);
+    expect(contractBalance).to.equal(amount);
+    expect(await stakingContract.totalStake()).to.equal(amount);
+
+    const oldUserBalance = await usdcInstance.balanceOf(deployer.address);
+
+    const tx3 = await stakingContract.withdraw(deployer.address, withdrawAmount);
+    await tx3.wait();
+
+    const newUserBalance = await usdcInstance.balanceOf(deployer.address);
+    expect(newUserBalance).to.equal(parseInt(userBalance) + withdrawAmount);
+
+    expect(await stakingContract.totalStake()).to.equal(amount - withdrawAmount);
+  });
 });
