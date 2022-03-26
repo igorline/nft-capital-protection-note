@@ -168,4 +168,30 @@ describe('YourContract', function () {
 
     await expect(stakingContract.withdraw(deployer.address, withdrawAmount)).to.be.reverted;
   });
+
+  it('Try withdraw other userAddress', async function () {
+    const initialSupply = 100 * Math.pow(10, 6);
+    const amount = 65 * Math.pow(10, 6);
+    const withdrawAmount = 70 * Math.pow(10, 6);
+
+    const accounts = await ethers.getSigners();
+    const deployer = accounts[0];
+    const deployer1 = accounts[1];
+
+    const USDC = await ethers.getContractFactory('USDC');
+    const usdcInstance = await USDC.deploy(initialSupply);
+
+    const StakingContract = await ethers.getContractFactory('contractv1');
+    const stakingContract = await StakingContract.deploy(usdcInstance.address);
+
+    const allowance = await usdcInstance.allowance(deployer.address, stakingContract.address);
+
+    const tx = await usdcInstance.approve(stakingContract.address, amount);
+    await tx.wait();
+
+    const tx2 = await stakingContract.stake(amount);
+    await tx2.wait();
+
+    await expect(stakingContract.withdraw(deployer1.address, withdrawAmount)).to.be.reverted;
+  });
 });
