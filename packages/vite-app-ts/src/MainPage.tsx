@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import React, { FC, useEffect, useState } from 'react';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
+import { useQuery } from 'react-query';
 
 import '~~/styles/main-page.css';
 
@@ -9,89 +11,72 @@ import { useEthersContext } from 'eth-hooks/context';
 import { useDexEthPrice } from 'eth-hooks/dapps';
 import { asEthersAdaptor } from 'eth-hooks/functions';
 
-import { MainPageMenu, MainPageContracts, MainPageFooter, MainPageHeader } from './components/main';
+import { MainPageMenu, MainPageFooter, MainPageHeader } from './components/main';
 import { useScaffoldHooksExamples as useScaffoldHooksExamples } from './components/main/hooks/useScaffoldHooksExamples';
 
 import { useBurnerFallback } from '~~/components/main/hooks/useBurnerFallback';
 import { useScaffoldProviders as useScaffoldAppProviders } from '~~/components/main/hooks/useScaffoldAppProviders';
-import { Hints, ExampleUI } from '~~/components/pages';
+import { AvailablePools, UserPools } from '~~/components/pages';
 import { BURNER_FALLBACK_ENABLED, MAINNET_PROVIDER } from '~~/config/appConfig';
 import { useAppContracts, useConnectAppContracts, useLoadAppContracts } from '~~/config/contractContext';
 import { NETWORKS } from '~~/models/constants/networks';
+import axios, { AxiosResponse} from 'axios';
 
-/**
- * ⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️
- * See config/appConfig.ts for configuration, such as TARGET_NETWORK
- * See MainPageContracts.tsx for your contracts component
- * See contractsConnectorConfig.ts for how to configure your contracts
- * ⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️⛳️
- *
- * For more
- */
+const AVAILABLE_POOLS_URL: string = 'https://api.covalenthq.com/v1/43114/networks/aave_v2/assets/?quote-currency=USD&format=JSON&key=ckey_d08af29fee2e462481eeeaeaa6e';
 
-/**
- * The main component
- * @returns
- */
+const fetchAvailbalePools = async (): Promise<any> => {
+  try {
+    const res: AxiosResponse = await axios.get(AVAILABLE_POOLS_URL);
+    console.log(res);
+    const data = res.data?.data?.items;
+    if (!data) return [];
+    return data;
+  } catch (error: any) {
+    console.log(error.message);
+    return [];
+  }
+}
+
+const stakers = [
+  '0x6277f8858a2c8f8c9ba401467aa67c7d5f5e1388',
+  '0x56ca47e8e19a5b710bd7ee047081a928e618875e',
+  '0xcdf4cde193c46093941326ab83e589e0efa18475',
+  '0xdfcb37fd793853aec7218ff01d3d0aec060a6708',
+  '0x3d954afcf9c9b0caa74711fab6749cc1dede0ae5',
+  '0x7c5cc15e262dbbcf483b7bdcee262f9051c195b4',
+  '0x82bf72fc64188b491ee750d5b16adf530bd52a10',
+  '0x2dafe8b194cc3ab3c1a72226db3fbfc51df30f0d',
+];
+
+const treasuryInfo = {
+  name: 'ToroDao Genesis',
+  token: 'DAI.e',
+  target: 100000,
+  creator: 'garylatta.eth',
+  poolRatio: 90,
+  completition: 48,
+};
+
 export const Main: FC = () => {
-  // -----------------------------
-  // Providers, signers & wallets
-  // -----------------------------
-  // 🛰 providers
-  // see useLoadProviders.ts for everything to do with loading the right providers
   const scaffoldAppProviders = useScaffoldAppProviders();
-
-  // 🦊 Get your web3 ethers context from current providers
   const ethersContext = useEthersContext();
-
-  // if no user is found use a burner wallet on localhost as fallback if enabled
   useBurnerFallback(scaffoldAppProviders, BURNER_FALLBACK_ENABLED);
-
-  // -----------------------------
-  // Load Contracts
-  // -----------------------------
-  // 🛻 load contracts
   useLoadAppContracts();
-  // 🏭 connect to contracts for mainnet network & signer
   const [mainnetAdaptor] = useEthersAdaptorFromProviderOrSigners(MAINNET_PROVIDER);
   useConnectAppContracts(mainnetAdaptor);
-  // 🏭 connec to  contracts for current network & signer
   useConnectAppContracts(asEthersAdaptor(ethersContext));
-
-  // -----------------------------
-  // Hooks use and examples
-  // -----------------------------
-  // 🎉 Console logs & More hook examples:
-  // 🚦 disable this hook to stop console logs
-  // 🏹🏹🏹 go here to see how to use hooks!
   useScaffoldHooksExamples(scaffoldAppProviders);
-
-  // -----------------------------
-  // These are the contracts!
-  // -----------------------------
-
-  // init contracts
   const yourContract = useAppContracts('YourContract', ethersContext.chainId);
   const mainnetDai = useAppContracts('DAI', NETWORKS.mainnet.chainId);
 
-  // keep track of a variable from the contract in the local React state:
   const [purpose, update] = useContractReader(
     yourContract,
     yourContract?.purpose,
     [],
     yourContract?.filters.SetPurpose()
   );
-
-  // 📟 Listen for broadcast events
-  const [setPurposeEvents] = useEventListener(yourContract, 'SetPurpose', 0);
-
-  // -----------------------------
-  // .... 🎇 End of examples
-  // -----------------------------
-  // 💵 This hook will get the price of ETH from 🦄 Uniswap:
   const [ethPrice] = useDexEthPrice(scaffoldAppProviders.mainnetAdaptor?.provider, scaffoldAppProviders.targetNetwork);
 
-  // 💰 this hook will get your balance
   const [yourCurrentBalance] = useBalance(ethersContext.account);
 
   const [route, setRoute] = useState<string>('');
@@ -99,53 +84,26 @@ export const Main: FC = () => {
     setRoute(window.location.pathname);
   }, [setRoute]);
 
+  const { data: availablePools } = useQuery(['available-pools'], () => fetchAvailbalePools(), {
+    enabled: true,
+    staleTime: 1000 * 60 * 5,
+  });
+
   return (
     <div className="App">
       <MainPageHeader scaffoldAppProviders={scaffoldAppProviders} price={ethPrice} />
-
-      {/* Routes should be added between the <Switch> </Switch> as seen below */}
       <BrowserRouter>
         <MainPageMenu route={route} setRoute={setRoute} />
         <Switch>
           <Route exact path="/">
-            <MainPageContracts scaffoldAppProviders={scaffoldAppProviders} />
+            <AvailablePools pools={availablePools || []} stakers={stakers} treasuryInfo={treasuryInfo}/>
           </Route>
-          {/* you can add routes here like the below examlples */}
-          <Route path="/hints">
-            <Hints
-              address={ethersContext?.account ?? ''}
-              yourCurrentBalance={yourCurrentBalance}
-              mainnetProvider={scaffoldAppProviders.mainnetAdaptor?.provider}
-              price={ethPrice}
-            />
+          <Route exact path="/user-pools">
+            <UserPools />
           </Route>
-          <Route path="/exampleui">
-            <ExampleUI
-              mainnetProvider={scaffoldAppProviders.mainnetAdaptor?.provider}
-              yourCurrentBalance={yourCurrentBalance}
-              price={ethPrice}
-            />
-          </Route>
-          <Route path="/mainnetdai">
-            {MAINNET_PROVIDER != null && (
-              <GenericContract
-                contractName="DAI"
-                contract={mainnetDai}
-                mainnetAdaptor={scaffoldAppProviders.mainnetAdaptor}
-                blockExplorer={NETWORKS.mainnet.blockExplorer}
-              />
-            )}
-          </Route>
-          {/* Subgraph also disabled in MainPageMenu, it does not work, see github issue! */}
-          {/*
-          <Route path="/subgraph">
-            <Subgraph subgraphUri={subgraphUri} mainnetProvider={scaffoldAppProviders.mainnetAdaptor?.provider} />
-          </Route>
-          */}
         </Switch>
       </BrowserRouter>
-
-      <MainPageFooter scaffoldAppProviders={scaffoldAppProviders} price={ethPrice} />
+      {/* <MainPageFooter scaffoldAppProviders={scaffoldAppProviders} price={ethPrice} /> */}
     </div>
   );
 };
