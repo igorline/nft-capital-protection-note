@@ -129,7 +129,7 @@ describe('YourContract', function () {
 
     const oldUserBalance = await usdcInstance.balanceOf(deployer.address);
 
-    const tx3 = await stakingContract.withdraw(deployer.address, withdrawAmount);
+    const tx3 = await stakingContract.withdraw(deployer.address, withdrawAmount, 0, 0, 0);
     await tx3.wait();
 
     const newUserBalance = await usdcInstance.balanceOf(deployer.address);
@@ -161,7 +161,7 @@ describe('YourContract', function () {
     const tx2 = await stakingContract.stake(amount);
     await tx2.wait();
 
-    await expect(stakingContract.withdraw(deployer.address, withdrawAmount)).to.be.reverted;
+    await expect(stakingContract.withdraw(deployer.address, withdrawAmount, 0, 0, 0)).to.be.reverted;
   });
 
   it('Try withdraw other userAddress', async function () {
@@ -213,5 +213,33 @@ describe('YourContract', function () {
 
     const settleTx = await stakingContractFork.settle(amount.div(2), '0');
     await settleTx.wait();
+  });
+
+  it('all put in staking and withdraw process', async function () {
+    await network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: ['0xbf14db80d9275fb721383a77c00ae180fc40ae98'],
+    });
+
+    const signer = await ethers.getSigner('0xbf14db80d9275fb721383a77c00ae180fc40ae98');
+
+    const RealUSDC = await ethers.getContractFactory('ERC20');
+    const realUSDC = RealUSDC.attach(realUSDCAddress);
+
+    const StakingContractFork = await ethers.getContractFactory('contractv1');
+    const stakingContractFork = await StakingContractFork.deploy(realUSDCAddress, realUSTAddress);
+    const impStakingContract = stakingContractFork.connect(signer);
+
+    const amount = ethers.utils.parseUnits('65', 6);
+    await (await realUSDC.connect(signer).approve(stakingContractFork.address, amount)).wait();
+    const tx3 = await impStakingContract.connect(signer).stake(amount);
+    tx3.wait();
+
+    const settleTx = await stakingContractFork.settle(amount.div(2), '0');
+    await settleTx.wait();
+
+    const amountToWithdraw = ethers.utils.parseUnits('5', 6);
+    const withdrawTx = await impStakingContract.withdraw(signer.address, amountToWithdraw, 0, 0, 0);
+    await withdrawTx.wait();
   });
 });
