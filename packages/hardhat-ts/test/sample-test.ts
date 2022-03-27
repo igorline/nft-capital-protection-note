@@ -211,7 +211,7 @@ describe('YourContract', function () {
     const tx3 = await impStakingContract.connect(signer).stake(amount);
     tx3.wait();
 
-    const settleTx = await stakingContractFork.settle(amount.div(2), '0');
+    const settleTx = await stakingContractFork.settle(amount.div(2), '0', [1], [1]);
     await settleTx.wait();
   });
 
@@ -235,7 +235,7 @@ describe('YourContract', function () {
     const tx3 = await impStakingContract.connect(signer).stake(amount);
     tx3.wait();
 
-    const settleTx = await stakingContractFork.settle(amount.div(2), '0');
+    const settleTx = await stakingContractFork.settle(amount.div(2), '0', [1], [1]);
     await settleTx.wait();
 
     const userBalance = await realUSDC.balanceOf(signer.address);

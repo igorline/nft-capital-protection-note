@@ -16,6 +16,7 @@ contract contractv1 {
   address public constant PANGOLIN_ROUTER = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106;
   address public constant BEEFY_STAKE = 0x6399A5E96CD627404b203Ea80517C3F8F9F78Fe6;
   address public constant USDC_UST_LP = 0x3c0ECf5F430bbE6B16A8911CB25d898Ef20805cF;
+  address public constant WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
   bool public strategyActive;
 
@@ -40,6 +41,7 @@ contract contractv1 {
   // Initializing errors
   error NotEnoughUSDC();
   error NotEnoughUSDCTransfered();
+  error NoNFTsSpecified();
 
   // Init UST and USDC addresses
   constructor(address _usdcAddr, address _ustAddr) {
@@ -214,17 +216,41 @@ contract contractv1 {
    * @param minUstAmount    defines the lowest UST we want to get from this transaction
    *
    */
-  function settle(uint256 maxUsdcAmount, uint256 minUstAmount) public {
+  function settle(
+    uint256 maxUsdcAmount,
+    uint256 minUstAmount,
+    uint256[] calldata nftsToBuy,
+    uint256[] calldata priceToPay
+  ) public {
     uint256 toStake = (90 * maxUsdcAmount) / 100;
     uint256 toBuyNFT = maxUsdcAmount - toStake;
-    _startFarm(toStake, minUstAmount);
 
-    /* address[] memory path = new address[](2);
+    if (nftsToBuy.length == 0) {
+      revert NoNFTsSpecified();
+    }
+
+    uint256 totalSumToPay;
+    for (uint256 i = 0; i < priceToPay.length; i++) {
+      totalSumToPay += priceToPay[i];
+    }
+    // swap to avax
+    address[] memory path = new address[](2);
     path[0] = usdcAddr;
-    path[1] = usdcAddr;
+    path[1] = WAVAX;
 
-    uint256 boughtAVAX = pangolinRouter.swapExactTokensForTokens(toBuyNFT, 0, path, address(this), deadline)[1]; */
+    if (IERC20(usdcAddr).allowance(address(this), PANGOLIN_ROUTER) < toBuyNFT) {
+      IERC20(usdcAddr).approve(PANGOLIN_ROUTER, type(uint256).max);
+    }
+    uint256 boughtAVAX = pangolinRouter.swapTokensForExactAVAX(totalSumToPay, toBuyNFT, path, address(this), block.timestamp)[1];
+
+    // for (uint i = 0; i < nftsToBuy.length; i++) {
+
+    // }
+
+    _startFarm(toStake, minUstAmount);
   }
+
+  receive() external payable {}
 
   /**
    * Adds value to the user table,
