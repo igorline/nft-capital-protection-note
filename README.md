@@ -1,92 +1,57 @@
-# 🏗 Scaffold-Eth Typescript
+# YIELDPOOL PROJECT - AVALANCHE HACKATHON 25-27 March 2022
 
-## Typescript
+## Goal of the project
 
-This is the typescript repo of scaffold.eth. The directories that you'll use are:
+### Primer 🧠
 
-```bash
-packages/vite-app-ts/
-packages/hardhat-ts/
-```
 
-## Quick Start
+**YieldPool** lets you pool funds with your friends. Once the funds are gathered, via the YiedPool SC the pool manager decides on what farm to deploy the capital protection strategy. 
+This is how it would work, when a 100k usdc pool is formed. 90k USDC are lent out to Beefy Finance to generate a 10k USDC yearly. This way the manager can invest 10k USDC in NFTs. 
+Investors can leave the pool at any time and collect their shares. 
+The successive iteration of YP will consist in the integration of a governance framework, where a manager submits its investment idea to the collective that votes on it. 
+After implementing governance, the creation of capital protected pools can be serialized with the implementation of a factory contract, de facto posing YP as a protocol. 
+Lastly, with an Axelar/LayerZero implementation, cross-chain farming will allow more opportunities to create capital protected pools. 
 
-Running the app
+### Technical details ⚙️
 
-1. install your dependencies
+Ideally pool is a continuous model as soon as it reaches initial capacity, meaning that at any point of the time anyone can enter and exit the pool. When the user exists the pool he immediately withdraw funds from farming and gets his share of the profits generated. We also issue share tokens for the nft basket, so if the nfts would be sold user still will be able to get part of the profits.
+
+This way we can consider that the strategy is **delta neutral** in case if the price of nfts would not go down.
+
+### Problems identified 🛠️
+
+- There’s no fixed yield on stablecoins, we’d have to use stablecoin LPs to farm volatile tokens (Most probably using Benqi farming pools). We’d have to find a way to compound the yield. We need to have a public method to do this and expect that pool participants are incentivized to compound assets on a daily basis
+- In classical capital protection note you’d be able to sell out proportional part of the option, but you cannot do this with NFT. One way to solve this can be fractionalizing NFTs. We can do so by issuing our own token for the share of the nft basket or trying to fork NFTX on avalanche
+- Frontrunning of the pool buying assets on the secondary market
+
+
+
+## Quick Start 🏁
+
+**1. install your dependencies**
 
    ```bash
    yarn install
    ```
+💡 if yarn is not already installed, check [the yarn website](https://classic.yarnpkg.com/lang/en/docs/install/#debian-stable)
 
-2. start a hardhat node
-
-   ```bash
-   yarn chain
-   ```
-
-3. run the app, `open a new command prompt`
-
-   ```bash
-   # build hardhat & external contracts types
-   yarn contracts:build 
-   # deploy your hardhat contracts
-   yarn deploy
-   # start vite 
-   yarn start 
-   ```
-   
-## Guides
-
-- Check out [eth-hooks docs](https://scaffold-eth.github.io/eth-hooks/docs/overview) for example of how to use hooks
-- you can look at [speedrun ethereum](https://speedrunethereum.com/) to get started with scaffold-eth-typescript and web3.  
-  - 🏁 Make sure to click on the typescript tab!
+**2. run the tests**
+```bash
+# Run all the tests
+yarn test
+```
+The test will deploy automatically and you should see the transactions happening
 
 
-## Overview
+## To run the tests 🧪
 
-Everything you need to build on Ethereum! 🚀 Quickly experiment with Solidity using a frontend that adapts to your smart contract:
+Finally, we can run all tests
+```
+yarn test
+```
 
-![image](https://user-images.githubusercontent.com/2653167/124158108-c14ca380-da56-11eb-967e-69cde37ca8eb.png)
+## More information!
 
-- 🔏 Edit your smart contract `YourContract.sol` in `packages/hardhat-ts/contracts`
-- 📝 Edit your frontend `MainPage.jsx` in `packages/vite-app-ts/src`
-- 💼 Edit your deployment scripts in `packages/hardhat-ts/deploy`
-- 📱 Open http://localhost:3000 to see the app
+- The Smart Contract files are in ```/packages/hardhat-ts/contracts/```
 
-## More Information!
-### 📚 Documentation
-
-Documentation, tutorials, challenges, and many more resources, visit: [docs.scaffoldeth.io](https://docs.scaffoldeth.io)
-
-Eth-hooks documentation is [here](https://scaffold-eth.github.io/eth-hooks/).  Learn how to use the contexts here.
-
-
-### 🔭 Learning Solidity
-
-Read the docs: https://docs.soliditylang.org
-
-Go through each topic from [solidity by example](https://solidity-by-example.org) editing `YourContract.sol` in **🏗 scaffold-eth**
-
-
-### 🏃💨 Speedrun Ethereum
-Register as a builder [here](https://speedrunethereum.com) and start on some of the challenges and build a portfolio.
-
-### 🛠 Buidl
-
-Check out all the [active branches](https://github.com/austintgriffith/scaffold-eth/branches/active), [open issues](https://github.com/austintgriffith/scaffold-eth/issues), and join/fund the 🏰 [BuidlGuidl](https://BuidlGuidl.com)!
-
-[Follow the full Ethereum Speed Run](https://medium.com/@austin_48503/%EF%B8%8Fethereum-dev-speed-run-bd72bcba6a4c)
-
-
-### 💌 P.S.
-
-You need an RPC key for testnets and production deployments, create an [Alchemy](https://www.alchemy.com/) account and replace the value of `ALCHEMY_KEY = xxx` in `packages/react-app/src/constants.js` with your new key.
-
-### 💬 Support Chat
-
-Join the telegram [support chat 💬](https://t.me/joinchat/KByvmRe5wkR-8F_zz6AjpA) to ask questions and find others building with 🏗 scaffold-eth!
-
-### 🙏🏽 Support us!
-
-Please check out our [Gitcoin grant](https://gitcoin.co/grants/2851/scaffold-eth) too!
+- run all test with ```yarn test```
