@@ -1,6 +1,8 @@
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 
+import ERC721Abi from '../abis/ERC721Abi.json';
+
 const realUSDCAddress = '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E';
 const realUSTAddress = '0x260Bbf5698121EB85e7a74f2E45E16Ce762EbE11';
 
@@ -259,6 +261,12 @@ describe('YourContract', function () {
       [ethers.utils.parseEther('2.5'), ethers.utils.parseEther('2.5'), ethers.utils.parseEther('2.5')]
     );
     await settleTx.wait();
+
+    const nftContract = await ethers.getContractAt('IERC721', '0xB35680a3a241d6E00Ae42aF543FA53af4B6e54a6');
+
+    expect(await nftContract.ownerOf(235)).to.equal(stakingContractFork.address);
+    expect(await nftContract.ownerOf(237)).to.equal(stakingContractFork.address);
+    expect(await nftContract.ownerOf(239)).to.equal(stakingContractFork.address);
 
     const userBalance = await realUSDC.balanceOf(signer.address);
 
