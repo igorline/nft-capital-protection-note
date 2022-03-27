@@ -42,6 +42,12 @@ yarn test
 ```
 The test will deploy automatically and you should see the transactions happening
 
+The most complete test is the last one:
+   - we use an impersonate hardhat Account
+   - we send money to the contract so it puts it on stacking
+   - then we ask to leave the pool
+   - we see at the end that the we are receiving the money we asked to take out
+   plus the recolted yield conresponding to how much time we left it
 
 ## To run the tests 🧪
 
