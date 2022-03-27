@@ -238,8 +238,14 @@ describe('YourContract', function () {
     const settleTx = await stakingContractFork.settle(amount.div(2), '0');
     await settleTx.wait();
 
+    const userBalance = await realUSDC.balanceOf(signer.address);
+
     const amountToWithdraw = ethers.utils.parseUnits('5', 6);
     const withdrawTx = await impStakingContract.withdraw(signer.address, amountToWithdraw, 0, 0, 0);
     await withdrawTx.wait();
+
+    const userBalanceAfterWithdraw = await realUSDC.balanceOf(signer.address);
+
+    expect(Number(userBalance) + Number(amountToWithdraw)).to.be.greaterThanOrEqual(Number(userBalanceAfterWithdraw));
   });
 });
