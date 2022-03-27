@@ -16,7 +16,7 @@
       "fork": "yarn workspace @scaffold-eth/hardhat fork",
       "node": "yarn workspace @scaffold-eth/hardhat chain",
       "test": "yarn workspace @scaffold-eth/hardhat test",
-      "start": "yarn workspace @scaffold-eth/vite-app start",
+      "start": "yarn --cwd ./packages/frontend dev",
       "compile": "yarn workspace @scaffold-eth/hardhat compile",
       "contracts:build": "yarn workspace @scaffold-eth/hardhat hardhat compile && yarn workspace @scaffold-eth/vite-app contracts:external",
       "contracts:rebuild": "yarn workspace @scaffold-eth/hardhat hardhat clean && yarn contracts:build",
