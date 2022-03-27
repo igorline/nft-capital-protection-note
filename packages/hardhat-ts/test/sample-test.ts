@@ -206,16 +206,33 @@ describe('YourContract', function () {
     const stakingContractFork = await StakingContractFork.deploy(realUSDCAddress, realUSTAddress);
     const impStakingContract = stakingContractFork.connect(signer);
 
-    const amount = ethers.utils.parseUnits('65', 6);
+    const amount = ethers.utils.parseUnits('15000', 6);
     await (await realUSDC.connect(signer).approve(stakingContractFork.address, amount)).wait();
     const tx3 = await impStakingContract.connect(signer).stake(amount);
     tx3.wait();
 
-    const settleTx = await stakingContractFork.settle(amount.div(2), '0', [1], [1]);
+    const settleTx = await stakingContractFork.settle(
+      amount.div(2),
+      '0',
+      [166301, 166303, 166305],
+      [ethers.utils.parseEther('2.5'), ethers.utils.parseEther('2.5'), ethers.utils.parseEther('2.5')]
+    );
     await settleTx.wait();
   });
 
   it('all put in staking and withdraw process', async function () {
+    await network.provider.request({
+      method: 'hardhat_reset',
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: 'https://rpc.ankr.com/avalanche',
+            blockNumber: 12574834,
+          },
+        },
+      ],
+    });
+
     await network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: ['0xbf14db80d9275fb721383a77c00ae180fc40ae98'],
@@ -230,12 +247,17 @@ describe('YourContract', function () {
     const stakingContractFork = await StakingContractFork.deploy(realUSDCAddress, realUSTAddress);
     const impStakingContract = stakingContractFork.connect(signer);
 
-    const amount = ethers.utils.parseUnits('65', 6);
+    const amount = ethers.utils.parseUnits('15000', 6);
     await (await realUSDC.connect(signer).approve(stakingContractFork.address, amount)).wait();
     const tx3 = await impStakingContract.connect(signer).stake(amount);
     tx3.wait();
 
-    const settleTx = await stakingContractFork.settle(amount.div(2), '0', [1], [1]);
+    const settleTx = await stakingContractFork.settle(
+      amount.div(2),
+      '0',
+      [166301, 166303, 166305],
+      [ethers.utils.parseEther('2.5'), ethers.utils.parseEther('2.5'), ethers.utils.parseEther('2.5')]
+    );
     await settleTx.wait();
 
     const amountToWithdraw = ethers.utils.parseUnits('5', 6);

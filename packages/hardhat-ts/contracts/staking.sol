@@ -3,12 +3,15 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "./IPangolinRouter.sol";
 import "./IBeefyVault.sol";
+import "./IKalao.sol";
 import "./Ownable.sol";
-import "hardhat/console.sol";
 
-contract contractv1 {
+contract contractv1 is ERC165, IERC721Receiver {
   address public usdcAddr;
   address public ustAddr;
 
@@ -17,12 +20,14 @@ contract contractv1 {
   address public constant BEEFY_STAKE = 0x6399A5E96CD627404b203Ea80517C3F8F9F78Fe6;
   address public constant USDC_UST_LP = 0x3c0ECf5F430bbE6B16A8911CB25d898Ef20805cF;
   address public constant WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
+  address public constant KALAO = 0x11AC3118309A7215c6d87c7C396e2DF333Ae3A9C;
 
   bool public strategyActive;
 
   // Init instances of Pangolin and Beefy for staking and changing tokens
   IPangolinRouter pangolinRouter = IPangolinRouter(PANGOLIN_ROUTER);
   IBeefyVault beefyVault = IBeefyVault(BEEFY_STAKE);
+  IKalao kalao = IKalao(KALAO);
 
   // Declares the struct that will be used to store the staked amount of every user
   struct User {
@@ -167,9 +172,6 @@ contract contractv1 {
 
     // get the balance of USDC_UST_LP
     uint256 pairBalance = IERC20(USDC_UST_LP).balanceOf(address(this));
-    console.log(pairBalance);
-    console.log(amountMinUST);
-    console.log(amountMinUSDC);
 
     if (IERC20(USDC_UST_LP).allowance(address(this), PANGOLIN_ROUTER) < pairBalance) {
       IERC20(USDC_UST_LP).approve(PANGOLIN_ROUTER, type(uint256).max);
@@ -222,7 +224,7 @@ contract contractv1 {
     uint256[] calldata nftsToBuy,
     uint256[] calldata priceToPay
   ) public {
-    uint256 toStake = (90 * maxUsdcAmount) / 100;
+    uint256 toStake = (9000 * maxUsdcAmount) / 10000;
     uint256 toBuyNFT = maxUsdcAmount - toStake;
 
     if (nftsToBuy.length == 0) {
@@ -243,9 +245,9 @@ contract contractv1 {
     }
     uint256 boughtAVAX = pangolinRouter.swapTokensForExactAVAX(totalSumToPay, toBuyNFT, path, address(this), block.timestamp)[1];
 
-    // for (uint i = 0; i < nftsToBuy.length; i++) {
-
-    // }
+    for (uint256 i = 0; i < nftsToBuy.length; i++) {
+      kalao.buyNFT{ value: priceToPay[i] }(nftsToBuy[i]);
+    }
 
     _startFarm(toStake, minUstAmount);
   }
@@ -274,5 +276,14 @@ contract contractv1 {
    */
   function get_user_data(address useraddr) public view returns (User memory) {
     return data[useraddr];
+  }
+
+  function onERC721Received(
+    address,
+    address,
+    uint256,
+    bytes memory
+  ) public virtual override returns (bytes4) {
+    return this.onERC721Received.selector;
   }
 }
