@@ -17,6 +17,8 @@ contract contractv1 {
   address public constant BEEFY_STAKE = 0x6399A5E96CD627404b203Ea80517C3F8F9F78Fe6;
   address public constant USDC_UST_LP = 0x3c0ECf5F430bbE6B16A8911CB25d898Ef20805cF;
 
+  bool public strategyActive;
+
   // Init instances of Pangolin and Beefy for staking and changing tokens
   IPangolinRouter pangolinRouter = IPangolinRouter(PANGOLIN_ROUTER);
   IBeefyVault beefyVault = IBeefyVault(BEEFY_STAKE);
@@ -71,10 +73,6 @@ contract contractv1 {
 
     // Sets a deadline for the process
     uint256 deadline = block.timestamp;
-
-    // Gets the current account balance and sets the max spending amount to half the balance
-    uint256 currentBalance = IERC20(usdcAddr).balanceOf(address(this));
-    uint256 maxUsdcAvailableToSpend = currentBalance / 2;
 
     // If the transaction is under the max amount we want to spend, we approve the transaction
     if (IERC20(usdcAddr).allowance(address(this), PANGOLIN_ROUTER) < maxUsdcAmountToSpend) {
@@ -137,6 +135,20 @@ contract contractv1 {
     uint256 amountMinUSDC,
     uint256 minAmountUSDCTradeEND
   ) public {
+    if (strategyActive) {
+      withdrawBeefy(useraddr, amount, amountMinUST, amountMinUSDC, minAmountUSDCTradeEND);
+    } else {
+      withdrawUnsettled(useraddr, amount);
+    }
+  }
+
+  function withdrawBeefy(
+    address useraddr,
+    uint256 amount,
+    uint256 amountMinUST,
+    uint256 amountMinUSDC,
+    uint256 minAmountUSDCTradeEND
+  ) internal {
     data[useraddr].stakedAmount -= amount;
     uint256 totalBeefy = IERC20(BEEFY_STAKE).balanceOf(address(this));
     uint256 withdrawalAmount = (totalBeefy * amount) / totalStake;
@@ -186,6 +198,13 @@ contract contractv1 {
 
     IERC20(usdcAddr).transfer(msg.sender, boughtUSDC + amountUSDC);
     emit Withdrawn(msg.sender, boughtUSDC + amountUSDC);
+  }
+
+  function withdrawUnsettled(address useraddr, uint256 amount) internal {
+    data[useraddr].stakedAmount -= amount;
+    totalStake -= amount;
+    IERC20(usdcAddr).transfer(msg.sender, amount);
+    emit Withdrawn(msg.sender, amount);
   }
 
   /**
